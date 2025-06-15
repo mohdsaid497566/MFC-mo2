@@ -38,6 +38,8 @@ echo
 
 # Fixes Delta not being able to find core library file
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/sw/spack/deltas11-2023-03/apps/linux-rhel8-zen3/nvhpc-24.1/openmpi-4.1.5-zkiklxi/lib/
+export CUDA_HOME=/sw/spack/deltas11-2023-03/apps/linux-rhel8-x86_64/gcc-8.5.0/cuda-12.3.0-7oylpzc
+export LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}
 
 % for target in targets:
     ${helpers.run_prologue(target)}
