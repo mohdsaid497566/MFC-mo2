@@ -75,4 +75,4 @@ jobs:
               "${PMD_HOME}/bin/pmd" cpd \
                 --dir src \
                 --language fortran \
-                --minimum-tokens=40
+                --minimum-tokens=20
