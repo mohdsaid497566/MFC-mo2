@@ -32,7 +32,7 @@ jobs:
           
               "${PMD_HOME}/bin/pmd" cpd \
                 --dir src \
-                --force-language fortran \
+                --language fortran \
                 --minimum-tokens=20 \
                 --no-fail-on-violation \
                 --no-fail-on-error
