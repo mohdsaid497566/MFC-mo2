@@ -24,12 +24,13 @@ jobs:
               # Get latest PMD version from GitHub API
               PMD_VERSION=$(curl -s https://api.github.com/repos/pmd/pmd/releases/latest | grep '"tag_name":' | cut -d'"' -f4 | sed 's/pmd_releases\///')
               echo "Using PMD version: $PMD_VERSION"
+
               curl -sSL -o pmd.zip \
                 "https://github.com/pmd/pmd/releases/download/pmd_releases/${PMD_VERSION}/pmd-dist-${PMD_VERSION}-bin.zip"
               unzip -q pmd.zip
               PMD_HOME="pmd-bin-${PMD_VERSION}"
           
-                            SOURCE_DIR="${1:-src}"
+              SOURCE_DIR="${1:-src}"
               total_files=$(find "$SOURCE_DIR" -type f \( -name "*.f" -o -name "*.f90" -o -name "*.for" -o -name "*.fpp" -o -name "*.F" -o -name "*.F90" \) | wc -l)
               processed=0
 
@@ -54,13 +55,22 @@ jobs:
                   #    - Lines starting with 'c', 'C', '*', 'd', 'D' in column 1 (fixed form comments)
                   # 2. Remove end-of-line comments (anything after '!' that isn't in a string)
                   # 3. Preserve strings containing '!' characters
+                  sed -E '
+                    :a
+                    /&$/ {
+                          N
+                          s/&[[:space:]]*\n[[:space:]]*&/ /
+                          ba
+                    }
+                    s/&//g
+                  ' "$file" | \
                   sed -E \
                       -e '/^\s*!/s/.*//' \
                       -e '/^[cC*dD]/s/.*//' \
                       -e '/^[ \t]*[cC*dD]/s/.*//' \
                       -e 's/([^"'\'']*("[^"]*"[^"'\'']*|'\''[^'\'']*'\''[^"'\'']*)*[^"'\'']*)[!].*$/\1/' \
-                      "$file" > "$TMP_FILE"
-                  
+                      > "$TMP_FILE"
+                      
                   # Check if file was actually modified before replacing
                   if cmp -s "$file" "$TMP_FILE"; then
                       echo -e "No changes needed for $file"
