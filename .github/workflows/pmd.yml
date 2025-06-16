@@ -34,6 +34,5 @@ jobs:
                 --dir src \
                 --force-language fortran \
                 --minimum-tokens=20 \
-                --benchmark \
                 --no-fail-on-violation \
                 --no-fail-on-error
