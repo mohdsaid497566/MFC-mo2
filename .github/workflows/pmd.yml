@@ -56,22 +56,20 @@ jobs:
                   # 2. Remove end-of-line comments (anything after '!' that isn't in a string)
                   # 3. Preserve strings containing '!' characters
                   sed -E \
-                      -e '/^\s*!/s/.*//' \
-                      -e '/^[cC*dD]/s/.*//' \
-                      -e '/^[ \t]*[cC*dD]/s/.*//' \
-                      -e 's/([^"'\'']*("[^"]*"[^"'\'']*|'\''[^'\'']*'\''[^"'\'']*)*[^"'\'']*)[!].*$/\1/' \
-                      > "$TMP_FILE"
-                  
+                        -e '/^\s*!/s/.*//' \
+                        -e '/^[cC*dD]/s/.*//' \
+                        -e '/^[ \t]*[cC*dD]/s/.*//' \
+                        -e 's/([^"'\'']*("[^"]*"[^"'\'']*|'\''[^'\'']*'\''[^"'\'']*)*[^"'\'']*)[!].*$/\1/' \
+                        "$file" | \
                   sed -E '
                     :a
                     /&$/ {
-                          N
-                          s/&[[:space:]]*\n[[:space:]]*&/ /
-                          ba
+                              N
+                              s/&[[:space:]]*\n[[:space:]]*&/ /
+                              ba
                     }
                     s/&//g
-                  ' "$file" |
-                      
+                  ' > "$TMP_FILE"
                   # Check if file was actually modified before replacing
                   if cmp -s "$file" "$TMP_FILE"; then
                       echo -e "No changes needed for $file"
