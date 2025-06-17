@@ -63,12 +63,10 @@ jobs:
                       "$file" | \
                   sed -E '
                       :a
-                      # If a line ends with an operator or opening parenthesis, and the next line is indented,
-                      # or if the current line just ends and the next line is indented and starts with an operator/paren.
-                      # This pattern looks for a newline followed by optional spaces and then a continuation character.
-                      /\s*(\S+)\s*\n\s*([+-*/=(])/ {
+                      # FIX: Move '-' to the end of the character class or escape it
+                      /\s*(\S+)\s*\n\s*([+*/=()-])/ { # Changed from [+-*/=(] to [+*/=()-]
                           N
-                          s/([+-*/=(])\s*\n\s*([+-*/=(])/\1\2/
+                          s/([+*/=()-])\s*\n\s*([+*/=()-])/\1\2/ # Changed here too
                           s/\s*\n\s*/ /
                           ba
                       }
@@ -78,7 +76,6 @@ jobs:
                           ba
                       }
                   ' > "$TMP_FILE"
-
                   if cmp -s "$file" "$TMP_FILE"; then
                       echo -e "No changes needed for $file"
                       rm "$TMP_FILE"
