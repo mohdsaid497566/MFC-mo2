@@ -56,21 +56,29 @@ jobs:
                   # 2. Remove end-of-line comments (anything after '!' that isn't in a string)
                   # 3. Preserve strings containing '!' characters
                   sed -E \
-                        -e '/^\s*!/s/.*//' \
-                        -e '/^[cC*dD]/s/.*//' \
-                        -e '/^[ \t]*[cC*dD]/s/.*//' \
-                        -e 's/([^"'\'']*("[^"]*"[^"'\'']*|'\''[^'\'']*'\''[^"'\'']*)*[^"'\'']*)[!].*$/\1/' \
-                        "$file" | \
+                      -e '/^\s*!/s/.*//' \
+                      -e '/^[cC*dD]/s/.*//' \
+                      -e '/^[ \t]*[cC*dD]/s/.*//' \
+                      -e 's/([^"'\'']*("[^"]*"[^"'\'']*|'\''[^'\'']*'\''[^"'\'']*)*[^"'\'']*)[!].*$/\1/' \
+                      "$file" | \
                   sed -E '
-                    :a
-                    /&$/ {
-                              N
-                              s/&[[:space:]]*\n[[:space:]]*&/ /
-                              ba
-                    }
-                    s/&//g
+                      :a
+                      # If a line ends with an operator or opening parenthesis, and the next line is indented,
+                      # or if the current line just ends and the next line is indented and starts with an operator/paren.
+                      # This pattern looks for a newline followed by optional spaces and then a continuation character.
+                      /\s*(\S+)\s*\n\s*([+-*/=(])/ {
+                          N
+                          s/([+-*/=(])\s*\n\s*([+-*/=(])/\1\2/
+                          s/\s*\n\s*/ /
+                          ba
+                      }
+                      /\s*\n\s*\+/ {
+                          N
+                          s/\s*\n\s*\+/ +/
+                          ba
+                      }
                   ' > "$TMP_FILE"
-                  # Check if file was actually modified before replacing
+
                   if cmp -s "$file" "$TMP_FILE"; then
                       echo -e "No changes needed for $file"
                       rm "$TMP_FILE"
