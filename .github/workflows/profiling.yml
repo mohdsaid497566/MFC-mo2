@@ -30,10 +30,10 @@ jobs:
 
       - name: Run Nsight Profiling
         run: |
-          nsys profile -o report.nsys ./mfc.sh test -o HLLD
+          nsys profile -o report ./mfc.sh test -o HLLD
 
       - name: Upload Nsight Profiling Report
         uses: actions/upload-artifact@v4
         with:
           name: nsight-profiling-report
-          path: report.nsys
+          path: ./
