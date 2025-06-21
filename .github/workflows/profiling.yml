@@ -28,9 +28,9 @@ jobs:
           sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 60
 
 
-      - name: Build MFC
-        run: |
-          ./mfc.sh build -t pre_process simulation -j $(nproc)
+    #   - name: Build MFC
+    #     run: |
+    #       ./mfc.sh build -t pre_process simulation -j $(nproc)
 
       - name: Run Nsight Profiling
         run: |
