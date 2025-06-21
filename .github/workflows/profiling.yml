@@ -1,0 +1,30 @@
+name: Nsight Profiling
+
+on: [push, pull_request]
+
+jobs:
+  profiling:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Nsight
+        uses: nvidia/setup-cuda@v1
+        with:
+            cuda-version: 12.0
+            driver-version: 545.23.04
+            toolkit-version: 12.0
+            toolkit-components: nvcc,cudnn,nccl,nsight-systems,nsight-compute,nsight-visual-studio,nsight-systems-cli,nsight-systems-cli-gui
+
+      - name: Set up CUDA environment
+        run: |
+            echo "export PATH=/usr/local/cuda-12.0/bin:$PATH" >> $GITHUB_ENV
+            echo "export LD_LIBRARY_PATH=/usr/local/cuda-12.0/lib64:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+
+      - name: Run Nsight Profiling
+        run: |
+            nsys profile -o report.nsys ../../mfc.sh test -o HLLD
+
+      - name: Upload Nsight Profiling Report
+        uses: actions/upload-artifact@v4
+        with:
+            name: report.nsys
+            path: report.nsys
