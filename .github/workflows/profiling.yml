@@ -12,8 +12,7 @@ jobs:
       - name: Install CUDA Toolkit
         uses: Jimver/cuda-toolkit@v0.2.24
         with:
-          cuda: '12.2.0'
-          method: 'network'
+          cuda: '11.8.0'
 
       - name: Install MFC Dependencies
         run: |
