@@ -6,25 +6,31 @@ jobs:
   profiling:
     runs-on: ubuntu-latest
     steps:
-      - name: Install Nsight
-        uses: nvidia/setup-cuda@v1
-        with:
-            cuda-version: 12.0
-            driver-version: 545.23.04
-            toolkit-version: 12.0
-            toolkit-components: nvcc,cudnn,nccl,nsight-systems,nsight-compute,nsight-visual-studio,nsight-systems-cli,nsight-systems-cli-gui
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Set up CUDA environment
+      - name: Install CUDA Toolkit
+        uses: Jimver/cuda-toolkit@v0.2.24
+        with:
+          cuda: '12.0.0'
+          method: 'network'
+          sub-packages: '["nvcc", "cudart", "cuda_profiler_api", "nsight_systems", "nsight_compute"]'
+
+      - name: Install MFC Dependencies
         run: |
-            echo "export PATH=/usr/local/cuda-12.0/bin:$PATH" >> $GITHUB_ENV
-            echo "export LD_LIBRARY_PATH=/usr/local/cuda-12.0/lib64:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          sudo apt-get update
+          sudo apt-get install -y gfortran cmake build-essential
+
+      - name: Build MFC
+        run: |
+          ./mfc.sh build -t pre_process simulation -j $(nproc)
 
       - name: Run Nsight Profiling
         run: |
-            nsys profile -o report.nsys ../../mfc.sh test -o HLLD
+          nsys profile -o report.nsys ./mfc.sh test -o HLLD -f EA8FA07E -t 9E2CA336
 
       - name: Upload Nsight Profiling Report
         uses: actions/upload-artifact@v4
         with:
-            name: report.nsys
-            path: report.nsys
+          name: nsight-profiling-report
+          path: report.nsys
