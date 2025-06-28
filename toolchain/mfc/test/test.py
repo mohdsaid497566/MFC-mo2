@@ -231,9 +231,6 @@ def _handle_case(case: TestCase, devices: typing.Set[int]):
 
     if ARG("test_all"):
         case.delete_output()
-        # if ARG("rdma_mpi"):
-        #     cmd = case.run([PRE_PROCESS, SIMULATION, POST_PROCESS], gpus=devices, rdma_mpi=True)
-        # else:
         cmd = case.run([PRE_PROCESS, SIMULATION, POST_PROCESS], gpus=devices)
         out_filepath = os.path.join(case.get_dirpath(), "out_post.txt")
         common.file_write(out_filepath, cmd.stdout)
