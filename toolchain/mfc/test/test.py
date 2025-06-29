@@ -5,7 +5,7 @@ import rich, rich.table
 
 from ..printer import cons
 from ..        import common
-from ..state   import ARG
+from ..state   import ARG, ARGS
 from .case     import TestCase
 from .cases    import list_cases
 from ..        import sched
@@ -88,7 +88,7 @@ def test():
     global errors
 
     cases = list_cases()
-
+    
     # Delete UUIDs that are not in the list of cases from tests/
     if ARG("remove_old_tests"):
         dir_uuids = set(os.listdir(common.MFC_TEST_DIR))
@@ -119,6 +119,9 @@ def test():
     # Some cases require a specific build of MFC for features like Chemistry,
     # Analytically defined patches, and --case-optimization. Here, we build all
     # the unique versions of MFC we need to run cases.
+    if ARG("rdma_mpi") == True:
+        ARGS()["test_all"] = False
+
     codes = [PRE_PROCESS, SIMULATION] + ([POST_PROCESS] if ARG('test_all') else [])
     unique_builds = set()
     for case, code in itertools.product(cases, codes):
