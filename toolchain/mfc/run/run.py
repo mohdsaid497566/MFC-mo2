@@ -13,7 +13,8 @@ from ..common  import MFC_TEMPLATE_DIR, file_write, system, MFC_ROOT_DIR
 from ..common  import format_list_to_string, file_dump_yaml
 
 from . import queues, input
-    
+
+
 def __validate_job_options() -> None:
     if not ARG("mpi") and any({ARG("nodes") > 1, ARG("tasks_per_node") > 1}):
         raise MFCException("RUN: Cannot run on more than one rank with --no-mpi.")

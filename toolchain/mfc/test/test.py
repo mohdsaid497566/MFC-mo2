@@ -119,7 +119,7 @@ def test():
     # Some cases require a specific build of MFC for features like Chemistry,
     # Analytically defined patches, and --case-optimization. Here, we build all
     # the unique versions of MFC we need to run cases.
-    if ARG("rdma_mpi") == True:
+    if ARG("rdma_mpi") and ARG("dry_run"):
         ARGS()["test_all"] = False
 
     codes = [PRE_PROCESS, SIMULATION] + ([POST_PROCESS] if ARG('test_all') else [])
