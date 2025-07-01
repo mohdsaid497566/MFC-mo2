@@ -186,10 +186,21 @@ contains
             end if
 
             !Interpolate primitive variables at image point associated w/ GP
-            if (qbmm .and. .not. polytropic) then
-                call s_interpolate_image_point(q_prim_vf, gp, pb, mv)
+            if (bubbles_euler .and. .not. qbmm) then
+                call s_interpolate_image_point(q_prim_vf, gp, &
+                                               gp%ip%alpha_rho, gp%ip%alpha, gp%ip%pres, gp%ip%vel, gp%ip%c, &
+                                               gp%ip%r, gp%ip%v, gp%ip%pb, gp%ip%mv)
+            else if (qbmm .and. polytropic) then
+                call s_interpolate_image_point(q_prim_vf, gp, &
+                                               gp%ip%alpha_rho, gp%ip%alpha, gp%ip%pres, gp%ip%vel, gp%ip%c, &
+                                               gp%ip%r, gp%ip%v, gp%ip%pb, gp%ip%mv, gp%ip%nmom)
+            else if (qbmm .and. .not. polytropic) then
+                call s_interpolate_image_point(q_prim_vf, gp, &
+                                               gp%ip%alpha_rho, gp%ip%alpha, gp%ip%pres, gp%ip%vel, gp%ip%c, &
+                                               gp%ip%r, gp%ip%v, gp%ip%pb, gp%ip%mv, gp%ip%nmom, pb, mv, gp%ip%presb, gp%ip%massv)
             else
-                call s_interpolate_image_point(q_prim_vf, gp)
+                call s_interpolate_image_point(q_prim_vf, gp, &
+                                               gp%ip%alpha_rho, gp%ip%alpha, gp%ip%pres, gp%ip%vel, gp%ip%c)
             end if
 
             dyn_pres = 0._wp
@@ -723,7 +734,7 @@ contains
 
     !> Function that uses the interpolation coefficients and the current state
     !! at the cell centers in order to estimate the state at the image point
-    pure subroutine s_interpolate_image_point(q_prim_vf, gp, pb, mv)
+    pure subroutine s_interpolate_image_point(q_prim_vf, gp, alpha_rho_IP, alpha_IP, pres_IP, vel_IP, c_IP, r_IP, v_IP, pb_IP, mv_IP, nmom_IP, pb, mv, presb_IP, massv_IP)
         !$acc routine seq
         type(scalar_field), &
             dimension(sys_size), &
@@ -731,22 +742,19 @@ contains
 
         real(wp), optional, dimension(idwbuff(1)%beg:, idwbuff(2)%beg:, idwbuff(3)%beg:, 1:, 1:), intent(INOUT) :: pb, mv
 
-        type(ghost_point), intent(INOUT) :: gp
-        type(ghost_point) :: mgp !< Ghost point for QBMM
-        type(ghost_point) :: massgp !< Ghost point for mass conservation in QBMM
-        ! real(wp), intent(INOUT) :: gp%ip%presb
-        ! real(wp), dimension(3), intent(INOUT) :: gp%ip%vel
-        ! real(wp), intent(INOUT) :: gp%ip%c
-        ! real(wp), dimension(num_fluids), intent(INOUT) :: gp%ip%alpha, gp%ip%alpha_rho
-        ! real(wp), optional, dimension(:), intent(INOUT) :: gp%ip%r, gp%ip%v, gp%ip%pb, mgp%ip%v
-        ! real(wp), optional, dimension(:), intent(INOUT) :: gp%ip%nmom
-        ! real(wp), optional, dimension(:), intent(INOUT) :: gp%ip%presb, massgp%ip%v
+        type(ghost_point), intent(IN) :: gp
+        real(wp), intent(INOUT) :: pres_IP
+        real(wp), dimension(3), intent(INOUT) :: vel_IP
+        real(wp), intent(INOUT) :: c_IP
+        real(wp), dimension(num_fluids), intent(INOUT) :: alpha_IP, alpha_rho_IP
+        real(wp), optional, dimension(:), intent(INOUT) :: r_IP, v_IP, pb_IP, mv_IP
+        real(wp), optional, dimension(:), intent(INOUT) :: nmom_IP
+        real(wp), optional, dimension(:), intent(INOUT) :: presb_IP, massv_IP
 
         integer :: i, j, k, l, q !< Iterator variables
         integer :: i1, i2, j1, j2, k1, k2 !< Iterator variables
         real(wp) :: coeff
 
-        
         i1 = gp%ip_grid(1); i2 = i1 + 1
         j1 = gp%ip_grid(2); j2 = j1 + 1
         k1 = gp%ip_grid(3); k2 = k1 + 1
@@ -756,27 +764,27 @@ contains
             k2 = 0
         end if
 
-        gp%ip%alpha_rho = 0._wp
-        gp%ip%alpha = 0._wp
-        gp%ip%presb = 0._wp
-        gp%ip%vel = 0._wp
+        alpha_rho_IP = 0._wp
+        alpha_IP = 0._wp
+        pres_IP = 0._wp
+        vel_IP = 0._wp
 
-        if (surface_tension) gp%ip%c = 0._wp
+        if (surface_tension) c_IP = 0._wp
 
         if (bubbles_euler) then
-            gp%ip%r = 0._wp
-            gp%ip%v = 0._wp
+            r_IP = 0._wp
+            v_IP = 0._wp
             if (.not. polytropic) then
-                mgp%ip%v = 0._wp
-                gp%ip%pb = 0._wp
+                mv_IP = 0._wp
+                pb_IP = 0._wp
             end if
         end if
 
         if (qbmm) then
-            gp%ip%nmom = 0._wp
+            nmom_IP = 0._wp
             if (.not. polytropic) then
-                gp%ip%presb = 0._wp
-                massgp%ip%v = 0._wp
+                presb_IP = 0._wp
+                massv_IP = 0._wp
             end if
         end if
 
@@ -789,51 +797,51 @@ contains
 
                     coeff = gp%interp_coeffs(i - i1 + 1, j - j1 + 1, k - k1 + 1)
 
-                    gp%ip%presb = gp%ip%presb + coeff* &
+                    pres_IP = pres_IP + coeff* &
                               q_prim_vf(E_idx)%sf(i, j, k)
 
                     !$acc loop seq
                     do q = momxb, momxe
-                        gp%ip%vel(q + 1 - momxb) = gp%ip%vel(q + 1 - momxb) + coeff* &
+                        vel_IP(q + 1 - momxb) = vel_IP(q + 1 - momxb) + coeff* &
                                                 q_prim_vf(q)%sf(i, j, k)
                     end do
 
                     !$acc loop seq
                     do l = contxb, contxe
-                        gp%ip%alpha_rho(l) = gp%ip%alpha_rho(l) + coeff* &
+                        alpha_rho_IP(l) = alpha_rho_IP(l) + coeff* &
                                           q_prim_vf(l)%sf(i, j, k)
-                        gp%ip%alpha(l) = gp%ip%alpha(l) + coeff* &
+                        alpha_IP(l) = alpha_IP(l) + coeff* &
                                       q_prim_vf(advxb + l - 1)%sf(i, j, k)
                     end do
 
                     if (surface_tension) then
-                        gp%ip%c = gp%ip%c + coeff*q_prim_vf(c_idx)%sf(i, j, k)
+                        c_IP = c_IP + coeff*q_prim_vf(c_idx)%sf(i, j, k)
                     end if
 
                     if (bubbles_euler .and. .not. qbmm) then
                         !$acc loop seq
                         do l = 1, nb
                             if (polytropic) then
-                                gp%ip%r(l) = gp%ip%r(l) + coeff*q_prim_vf(bubxb + (l - 1)*2)%sf(i, j, k)
-                                gp%ip%v(l) = gp%ip%v(l) + coeff*q_prim_vf(bubxb + 1 + (l - 1)*2)%sf(i, j, k)
+                                r_IP(l) = r_IP(l) + coeff*q_prim_vf(bubxb + (l - 1)*2)%sf(i, j, k)
+                                v_IP(l) = v_IP(l) + coeff*q_prim_vf(bubxb + 1 + (l - 1)*2)%sf(i, j, k)
                             else
-                                gp%ip%r(l) = gp%ip%r(l) + coeff*q_prim_vf(bubxb + (l - 1)*4)%sf(i, j, k)
-                                gp%ip%v(l) = gp%ip%v(l) + coeff*q_prim_vf(bubxb + 1 + (l - 1)*4)%sf(i, j, k)
-                                gp%ip%pb(l) = gp%ip%pb(l) + coeff*q_prim_vf(bubxb + 2 + (l - 1)*4)%sf(i, j, k)
-                                mgp%ip%v(l) = mgp%ip%v(l) + coeff*q_prim_vf(bubxb + 3 + (l - 1)*4)%sf(i, j, k)
+                                r_IP(l) = r_IP(l) + coeff*q_prim_vf(bubxb + (l - 1)*4)%sf(i, j, k)
+                                v_IP(l) = v_IP(l) + coeff*q_prim_vf(bubxb + 1 + (l - 1)*4)%sf(i, j, k)
+                                pb_IP(l) = pb_IP(l) + coeff*q_prim_vf(bubxb + 2 + (l - 1)*4)%sf(i, j, k)
+                                mv_IP(l) = mv_IP(l) + coeff*q_prim_vf(bubxb + 3 + (l - 1)*4)%sf(i, j, k)
                             end if
                         end do
                     end if
 
                     if (qbmm) then
                         do l = 1, nb*nmom
-                            gp%ip%nmom(l) = gp%ip%nmom(l) + coeff*q_prim_vf(bubxb - 1 + l)%sf(i, j, k)
+                            nmom_IP(l) = nmom_IP(l) + coeff*q_prim_vf(bubxb - 1 + l)%sf(i, j, k)
                         end do
                         if (.not. polytropic) then
                             do q = 1, nb
                                 do l = 1, nnode
-                                    gp%ip%presb((q - 1)*nnode + l) = gp%ip%presb((q - 1)*nnode + l) + coeff*pb(i, j, k, l, q)
-                                    massgp%ip%v((q - 1)*nnode + l) = massgp%ip%v((q - 1)*nnode + l) + coeff*mv(i, j, k, l, q)
+                                    presb_IP((q - 1)*nnode + l) = presb_IP((q - 1)*nnode + l) + coeff*pb(i, j, k, l, q)
+                                    massv_IP((q - 1)*nnode + l) = massv_IP((q - 1)*nnode + l) + coeff*mv(i, j, k, l, q)
                                 end do
                             end do
                         end if

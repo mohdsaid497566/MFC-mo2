@@ -396,7 +396,7 @@ module m_derived_types
     type point_data
         real(wp), dimension(:), allocatable :: alpha_rho  !< Partial densities
         real(wp), dimension(:), allocatable :: alpha      !< Volume fractions
-        real(wp) :: pressure                              !< Pressure
+        real(wp) :: pres                              !< Pressure
         real(wp), dimension(3) :: vel                     !< Velocity
         real(wp), dimension(3) :: vel_norm             !< Normalized velocity
         real(wp) :: c                                     !< Color function (for surface tension)
