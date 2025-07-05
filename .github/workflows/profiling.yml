@@ -32,6 +32,17 @@ jobs:
         run: |
           nsys profile -o report ./mfc.sh test --gpu -o HLLD
 
+      - name: Process Nsight Profiling Report
+        run: |
+          echo "=== Nsight Profiling Summary ==="
+          nsys stats --report gputrace report.nsys-rep
+
+          echo "=== TOP GPU KERNELS ==="
+          nsys stats --report gpukernsum --format table report.nsys-rep | head -20
+          
+          echo "=== TOP CUDA API CALLS ==="
+          nsys stats --report cudaapisum --format table report.nsys-rep | head -20
+
       - name: Upload Nsight Profiling Report
         uses: actions/upload-artifact@v4
         with:
