@@ -26,14 +26,14 @@ jobs:
 
       - name: Build
         run:  |
-          /bin/bash mfc.sh test --dry-run -j $(nproc)
+          /bin/bash mfc.sh test --dry-run --gpu -j $(nproc)
 
       - name: Run Nsight Profiling
         run: |
-          nsys profile -o report ./mfc.sh test -o HLLD
+          nsys profile -o report ./mfc.sh test --gpu -o HLLD
 
       - name: Upload Nsight Profiling Report
         uses: actions/upload-artifact@v4
         with:
           name: nsight-profiling-report
-          path: ./
+          path: report.nsys-rep
